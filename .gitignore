@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging and build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Test, lint, and type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env
+.env.*
+
+# Generated experiment outputs
+outputs/
+
+# Large local datasets and audio files
+data/
+datasets/
+audio/
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+
+# Local model checkpoints and ML artifacts
+FT_ALL_whisper_large_v2/
+checkpoints/
+models/
+*.safetensors
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
