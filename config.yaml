@@ -1,0 +1,32 @@
+manifest_path: null
+audio_root: "."
+whisper_model_path: "FT_ALL_whisper_large_v2"
+output_dir: "outputs"
+
+split_to_use: "test"
+sources_to_use: null
+max_samples_per_source: 100
+random_seed: 42
+sampling_strategy: "balanced_per_source"
+resume: true
+
+predictions_filename: "whisper_predictions.csv"
+corrections_filename: "llm_corrections.csv"
+
+ollama_url: "http://localhost:11434/api/generate"
+llm_model: "llama3.1:8b"
+llm_temperature: 0.0
+llm_num_predict: 256
+llm_max_retries: 3
+llm_timeout_sec: 120
+
+normalization:
+  lowercase: true
+  remove_punctuation: true
+  keep_diacritics: true
+
+whisper:
+  sampling_rate: 16000
+  language: "ro"
+  task: "transcribe"
+  max_new_tokens: 256
