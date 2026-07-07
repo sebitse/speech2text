@@ -22,15 +22,32 @@ def run(config_path: str) -> Path:
         raise FileNotFoundError(f"LLM corrections not found: {corrections_path}")
 
     corrections = pd.read_csv(corrections_path)
+    optional_columns = [
+        "llm_corrected_prediction",
+        "llm_status",
+        "llm_skip_reason",
+        "llm_accepted",
+        "llm_accept_reason",
+        "raw_to_llm_cer",
+        "length_ratio",
+        "final_prediction",
+    ]
+    missing_optional = [column for column in optional_columns if column not in corrections.columns]
+    if missing_optional:
+        logger.warning(
+            "Corrections CSV is missing optional LLM columns; evaluation will infer defaults: %s",
+            ", ".join(missing_optional),
+        )
+
     metrics_df = add_per_sample_metrics(corrections, config)
     by_source = summarize_by_source(metrics_df)
     global_metrics = summarize_global(metrics_df, by_source)
     features = extract_features_for_xgboost(metrics_df)
 
     metrics_dir = Path(config["output_dir"]) / "metrics"
-    per_sample_path = metrics_dir / "metrics_per_sample.csv"
-    by_source_path = metrics_dir / "metrics_per_source.csv"
-    global_path = metrics_dir / "metrics_global.json"
+    per_sample_path = metrics_dir / "per_sample_metrics.csv"
+    by_source_path = metrics_dir / "per_source_metrics.csv"
+    global_path = metrics_dir / "global_metrics.json"
     features_path = metrics_dir / "features_for_xgboost.csv"
 
     save_dataframe(per_sample_path, metrics_df)
