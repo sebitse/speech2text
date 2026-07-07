@@ -28,6 +28,18 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "llm_num_predict": 256,
     "llm_max_retries": 3,
     "llm_timeout_sec": 120,
+    "llm_correction": {
+        "skip_rodigits": True,
+        "skip_short_transcripts": True,
+        "min_words_for_llm": 5,
+        "skip_mostly_numeric": True,
+    },
+    "verification": {
+        "enabled": True,
+        "min_length_ratio": 0.85,
+        "max_length_ratio": 1.15,
+        "max_raw_to_llm_cer": 0.10,
+    },
     "normalization": {
         "lowercase": True,
         "remove_punctuation": True,
