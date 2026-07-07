@@ -20,6 +20,18 @@ llm_num_predict: 256
 llm_max_retries: 3
 llm_timeout_sec: 120
 
+llm_correction:
+  skip_rodigits: true
+  skip_short_transcripts: true
+  min_words_for_llm: 5
+  skip_mostly_numeric: true
+
+verification:
+  enabled: true
+  min_length_ratio: 0.85
+  max_length_ratio: 1.15
+  max_raw_to_llm_cer: 0.10
+
 normalization:
   lowercase: true
   remove_punctuation: true
