@@ -5,22 +5,39 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Union
 
 import pandas as pd
 
 
-OUTPUT_SUBDIRS = ("predictions", "corrections", "metrics", "logs")
+OUTPUT_SUBDIRS = (
+    "predictions",
+    "corrections",
+    "metrics",
+    "analysis",
+    "features",
+    "models",
+    "gated_results",
+    "model_comparison",
+    "topk_results",
+    "splits",
+    "repeated_seeds",
+    "bootstrap",
+    "qualitative",
+    "paper_assets",
+    "comparison_across_llms",
+    "logs",
+)
 
 
-def ensure_output_dirs(output_dir: str | Path) -> None:
+def ensure_output_dirs(output_dir: Union[str, Path]) -> None:
     """Create the standard output directory tree."""
     root = Path(output_dir)
     for subdir in OUTPUT_SUBDIRS:
         (root / subdir).mkdir(parents=True, exist_ok=True)
 
 
-def setup_logging(output_dir: str | Path, name: str = "whisper_llm") -> logging.Logger:
+def setup_logging(output_dir: Union[str, Path], name: str = "whisper_llm") -> logging.Logger:
     """Configure console and file logging."""
     ensure_output_dirs(output_dir)
     logger = logging.getLogger(name)
@@ -42,7 +59,7 @@ def setup_logging(output_dir: str | Path, name: str = "whisper_llm") -> logging.
     return logger
 
 
-def read_csv_if_exists(path: str | Path) -> pd.DataFrame:
+def read_csv_if_exists(path: Union[str, Path]) -> pd.DataFrame:
     """Read a CSV if present; otherwise return an empty DataFrame."""
     path = Path(path)
     if path.exists() and path.stat().st_size > 0:
@@ -50,7 +67,7 @@ def read_csv_if_exists(path: str | Path) -> pd.DataFrame:
     return pd.DataFrame()
 
 
-def append_row_csv(path: str | Path, row: Dict[str, object], columns: Iterable[str]) -> None:
+def append_row_csv(path: Union[str, Path], row: Dict[str, object], columns: Iterable[str]) -> None:
     """Append one row to a CSV, writing the header only once."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -64,14 +81,14 @@ def append_row_csv(path: str | Path, row: Dict[str, object], columns: Iterable[s
     )
 
 
-def save_dataframe(path: str | Path, df: pd.DataFrame) -> None:
+def save_dataframe(path: Union[str, Path], df: pd.DataFrame) -> None:
     """Save a dataframe to CSV."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False, encoding="utf-8")
 
 
-def save_json(path: str | Path, payload: Dict[str, object]) -> None:
+def save_json(path: Union[str, Path], payload: Dict[str, object]) -> None:
     """Save a JSON payload with UTF-8 encoding."""
     import json
 
