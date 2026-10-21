@@ -1,42 +1,10 @@
-# Whisper + LLM post-correction pentru Romanian ASR
+# Whisper + LLM Post-Correction for Romanian ASR
 
-Proiect pentru testarea unui flux experimental simplu:
+This project investigates whether a **local LLM running through Ollama** can conservatively improve transcripts produced by a **fine-tuned Romanian Whisper model**. Performance is measured using Word Error Rate (WER) and Character Error Rate (CER) before and after correction, without paid APIs.
 
-```text
-Audio -> Whisper ASR -> LLM conservative correction -> WER/CER before vs after
-```
+![Pipeline architecture](architecture.png)
 
-Scopul este sa verifici daca un LLM local rulat prin Ollama poate corecta conservator transcrierile unui model Whisper fine-tuned pentru limba romana, fara API-uri platite.
-
-## Structura
-
-```text
-project/
-├── config.yaml
-├── requirements.txt
-├── README.md
-├── run_whisper_transcription.py
-├── run_llm_correction.py
-├── evaluate_results.py
-├── run_full_pipeline.py
-├── src/
-│   ├── __init__.py
-│   ├── config.py
-│   ├── data.py
-│   ├── text_normalization.py
-│   ├── whisper_asr.py
-│   ├── llm_corrector.py
-│   ├── metrics.py
-│   ├── analysis.py
-│   └── io_utils.py
-└── outputs/
-    ├── predictions/
-    ├── corrections/
-    ├── metrics/
-    └── logs/
-```
-
-## Instalare
+## Setup
 
 ```bash
 python -m venv .venv
@@ -44,163 +12,52 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Instaleaza versiunea de `torch` potrivita pentru GPU-ul tau daca vrei inferenta CUDA. Codul foloseste automat GPU daca `torch.cuda.is_available()` este true.
+For Linux/macOS, activate the environment with `source .venv/bin/activate`. Install a CUDA-compatible version of PyTorch if GPU inference is required.
 
-## Manifest CSV
+Install [Ollama](https://ollama.com/), then download and start the local LLM:
 
-Manifestul trebuie sa contina coloanele:
-
-```text
-audio_path,text,split,source
+```bash
+ollama pull llama3.1:8b
+ollama serve
 ```
 
-Optional, poate contine si `sample_id`. Daca lipseste, proiectul foloseste indexul randului din CSV.
+## Data and configuration
 
-`audio_path` poate fi absolut sau relativ la `audio_root`.
+Provide a CSV manifest with the columns `audio_path,text,split,source`. An optional `sample_id` column can identify each sample. Audio paths can be absolute or relative to `audio_root`.
 
-## Configurare
-
-Editeaza `config.yaml`:
+Update `config.yaml` with your dataset, Whisper checkpoint, LLM, and sampling settings. For example:
 
 ```yaml
 manifest_path: "data/manifest.csv"
 audio_root: "data/audio"
 whisper_model_path: "FT_ALL_whisper_large_v2"
-output_dir: "outputs"
-
-split_to_use: "test"
-sources_to_use: null
-max_samples_per_source: 100
-random_seed: 42
-sampling_strategy: "balanced_per_source"
-resume: true
-
-ollama_url: "http://localhost:11434/api/generate"
 llm_model: "llama3.1:8b"
-llm_temperature: 0.0
-llm_num_predict: 256
-llm_max_retries: 3
-llm_timeout_sec: 120
-
-normalization:
-  lowercase: true
-  remove_punctuation: true
-  keep_diacritics: true
+split_to_use: "test"
 ```
 
-Sampling:
+## Run
 
-- `balanced_per_source`: ia maximum `max_samples_per_source` exemple din fiecare `source`.
-- `first_n`: ia primele `max_samples_per_source` exemple total.
-- `max_samples_per_source: null`: pastreaza toate exemplele.
-
-## Ollama
-
-Porneste Ollama local si descarca modelul:
-
-```bash
-ollama serve
-ollama pull llama3.1:8b
-```
-
-Test rapid:
-
-```bash
-ollama run llama3.1:8b
-```
-
-## Rulare
-
-Transcriere Whisper:
-
-```bash
-python run_whisper_transcription.py --config config.yaml
-```
-
-Corectie LLM:
-
-```bash
-python run_llm_correction.py --config config.yaml
-```
-
-Evaluare:
-
-```bash
-python evaluate_results.py --config config.yaml
-```
-
-Pipeline complet:
+Execute the complete pipeline:
 
 ```bash
 python run_full_pipeline.py --config config.yaml
 ```
 
-## Output-uri
+Or run each stage separately:
 
-`outputs/predictions/whisper_predictions.csv`:
+```bash
+python run_whisper_transcription.py --config config.yaml
+python run_llm_correction.py --config config.yaml
+python evaluate_results.py --config config.yaml
+```
 
-- `sample_id`
-- `source`
-- `split`
-- `audio_path`
-- `audio_abs_path`
-- `reference`
-- `whisper_prediction`
+## Results
 
-`outputs/corrections/llm_corrections.csv`:
+Results are saved under `outputs/`:
 
-- toate coloanele din predictii
-- `llm_corrected_prediction`
-- `llm_status`
-- `llm_model`
-- `llm_prompt_version`
-- `llm_latency_sec`
-- `changed_by_llm`
-- `raw_to_llm_cer`
+- **Predictions:** Whisper transcripts (`predictions/whisper_predictions.csv`).
+- **Corrections:** LLM outputs and correction status (`corrections/llm_corrections.csv`).
+- **Evaluation:** Per-sample, per-source, and global WER/CER metrics (`metrics/`), including improvement and overcorrection statistics.
+- **Future work:** `metrics/features_for_xgboost.csv` supports experiments with a gating model that decides when LLM correction may be helpful.
 
-`outputs/metrics/metrics_per_sample.csv`:
-
-- WER/CER inainte si dupa LLM
-- gain-uri
-- status `improved`, `degraded` sau `unchanged`
-
-`outputs/metrics/metrics_per_source.csv`:
-
-- sumar pe fiecare `source`
-- WER/CER in procente
-- procente improved/degraded/unchanged
-- procent de randuri modificate de LLM
-
-`outputs/metrics/metrics_global.json`:
-
-- metrici micro globale
-- metrici macro mediate pe surse
-- `overcorrection_rate_percent`, adica procentul exemplelor modificate de LLM unde WER s-a inrautatit
-
-`outputs/metrics/features_for_xgboost.csv`:
-
-- feature table pentru un viitor model de gating
-- include lungimi, rate de caractere, rate de diacritice/cifre/punctuatie, `raw_to_llm_cer`, `wer_before`, `wer_after`, `llm_helped`
-
-## Resume si robustete
-
-Scripturile scriu incremental rand cu rand.
-
-Daca transcrierea sau corectia se opreste, ruleaza din nou acelasi script cu `resume: true`. Randurile deja existente in CSV sunt sarite pe baza de `sample_id`.
-
-Daca Ollama esueaza pentru un exemplu, transcriptul original este pastrat, iar `llm_status` devine `failed`.
-
-## Interpretarea metricilor
-
-- `wer_before_percent`: eroarea Whisper fata de referinta.
-- `wer_after_percent`: eroarea dupa corectia LLM.
-- `wer_gain_percent`: `before - after`; valoare pozitiva inseamna imbunatatire.
-- `status_wer`: per sample, arata daca LLM a ajutat, a stricat sau nu a schimbat scorul.
-- `changed_by_llm_percent`: cat de des LLM-ul modifica transcriptul.
-- `overcorrection_rate_percent`: risc de supra-corectie pe randurile pe care LLM le-a modificat.
-
-## Extensie XGBoost gating
-
-Faza urmatoare poate folosi `features_for_xgboost.csv` pentru a antrena un model binar care prezice `llm_helped`.
-
-Ideea: la inferenta, trimiti la LLM doar transcripturile pentru care gating-ul estimeaza ca post-corectia are sanse sa reduca WER, reducand latenta si riscul de supra-corectie.
+Processing is incremental. With `resume: true`, completed samples are skipped on reruns. If an LLM request fails, the original Whisper transcript is retained.
